@@ -1,0 +1,31 @@
+{
+  "main": "index.html",
+  "preload": "preload.js",
+  "logo": "logo.png",
+  "development": {
+    "main": "http://localhost:5174"
+  },
+  "features": [
+    {
+      "code": "dictinput",
+      "explain": "数据字典录入",
+      "cmds": ["dictinput", "数据录入"]
+    },
+    {
+      "code": "dict",
+      "explain": "数据字典查询",
+      "cmds": ["dict", "数据查询"],
+      "type": "over",
+      "args": {
+        "type": "over",
+        "label": "输入关键字:搜索内容",
+        "placeholder": "例如：人员:张三"
+      }
+    },
+    {
+      "code": "dictlist",
+      "explain": "数据字典列表",
+      "cmds": ["dictlist", "数据列表"]
+    }
+  ]
+} 
