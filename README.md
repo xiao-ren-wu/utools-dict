@@ -16,6 +16,7 @@
   {"name": "李四", "age": 28, "job": "设计师"}
 ]
 ```
+[dictinput](/docs/dictinput.png)
 
 ### 2. 智能搜索 (dict)
 - 支持关键字 + 模糊搜索
@@ -25,13 +26,14 @@
 
 使用方式：`dict 关键字:搜索内容`  
 例如：`dict 员工:工程师`
-
+[dict](/docs/dict.png)
 ### 3. 数据管理 (dictlist)
 - 分类展示所有数据
 - 支持按创建时间排序
 - 支持批量删除记录
 - 支持分类数据清理
 - 横向滚动查看完整内容
+[dict](/docs/dictlist.png)
 
 ## 🌈 界面特性
 

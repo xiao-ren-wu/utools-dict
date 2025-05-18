@@ -25,8 +25,13 @@ const InputPage = ({ enterAction }) => {
 
       // 存储数据到本地
       const existingData = window.utools.dbStorage.getItem('dict_data') || {}
+<<<<<<< HEAD
       // append 到 existingData 中
       existingData[keyword] = [...existingData[keyword], ...dataWithIds]
+=======
+      // append to existing data
+      existingData[keyword] = [...(existingData[keyword] || []), ...dataWithIds]
+>>>>>>> revertmain
       window.utools.dbStorage.setItem('dict_data', existingData)
       
       message.success('数据保存成功')
