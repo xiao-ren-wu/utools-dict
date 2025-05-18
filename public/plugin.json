@@ -7,14 +7,6 @@
   },
   "features": [
     {
-      "code": "hello",
-      "explain": "这是插件应用的第一个功能",
-      "cmds": [
-        "你好",
-        "hello"
-      ]
-    },
-    {
       "code": "dictinput",
       "explain": "数据字典录入",
       "cmds": ["dictinput", "数据录入"]
