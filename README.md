@@ -26,7 +26,7 @@
 
 使用方式：`dict 关键字:搜索内容`  
 例如：`dict 员工:工程师`
-[dict](/docs/dict.png)
+![dict](/docs/dict.png)
 ### 3. 数据管理 (dictlist)
 - 分类展示所有数据
 - 支持按创建时间排序
