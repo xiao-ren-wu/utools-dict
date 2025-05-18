@@ -14,7 +14,7 @@
     {
       "code": "dict",
       "explain": "数据字典查询",
-      "cmds": ["dict", "数据查询"],
+      "cmds": ["dict", "字典"],
       "mainPush":true
     },
     {
