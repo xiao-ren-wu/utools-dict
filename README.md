@@ -16,7 +16,7 @@
   {"name": "李四", "age": 28, "job": "设计师"}
 ]
 ```
-[dictinput](/docs/dictinput.png)
+![dictinput](/docs/dictinput.png)
 
 ### 2. 智能搜索 (dict)
 - 支持关键字 + 模糊搜索
@@ -33,7 +33,8 @@
 - 支持批量删除记录
 - 支持分类数据清理
 - 横向滚动查看完整内容
-[dict](/docs/dictlist.png)
+  
+![dict](/docs/dictlist.png)
 
 ## 🌈 界面特性
 
