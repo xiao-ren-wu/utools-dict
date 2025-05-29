@@ -12,7 +12,7 @@ const SearchPage = ({ enterAction }) => {
 
   useEffect(() => {
     // 设置 uTools 子输入框
-    window.utools.setSubInput(({ text }) => {
+    const subInput = window.utools.setSubInput(({ text }) => {
       if (text) {
         const parts = text.split(':')
         const searchParams = parts.length >= 2
@@ -22,6 +22,18 @@ const SearchPage = ({ enterAction }) => {
         setSearchText(searchParams.searchText)
       }
     }, '输入关键字:模糊查询内容（例如：people:tom）')
+
+    // 清理函数
+    return () => {
+      if (subInput) {
+        subInput.remove()
+      }
+      // 重置状态
+      setData([])
+      setColumns([])
+      setKeyword('')
+      setSearchText('')
+    }
   }, [])
 
   useEffect(() => {
@@ -89,4 +101,4 @@ const SearchPage = ({ enterAction }) => {
   )
 }
 
-export default SearchPage 
+export default SearchPage
