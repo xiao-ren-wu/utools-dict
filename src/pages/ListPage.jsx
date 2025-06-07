@@ -117,7 +117,7 @@ const ListPage = ({ enterAction }) => {
 
   const items = Object.keys(data).map(key => ({
     key,
-    label: key,
+    label: `${key} (${data[key].length}条)`,
     children: (
       <div style={{ marginTop: 16 }}>
         <Space style={{ marginBottom: 16 }}>

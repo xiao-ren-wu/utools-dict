@@ -10,6 +10,12 @@ const SearchPage = ({ enterAction }) => {
   const [keyword, setKeyword] = useState('')
   const [searchText, setSearchText] = useState('')
 
+  // 重置搜索结果状态
+  const resetSearchResults = () => {
+    setData([])
+    setColumns([])
+  }
+
   useEffect(() => {
     // 设置 uTools 子输入框
     const subInput = window.utools.setSubInput(({ text }) => {
@@ -20,25 +26,27 @@ const SearchPage = ({ enterAction }) => {
           : { keyword: text.trim(), searchText: '' }
         setKeyword(searchParams.keyword)
         setSearchText(searchParams.searchText)
+      } else {
+        // 当输入框为空时只重置搜索结果
+        resetSearchResults()
+        setKeyword('')
+        setSearchText('')
       }
     }, '输入关键字:模糊查询内容（例如：people:tom）')
 
     // 清理函数
     return () => {
       if (subInput) {
-        subInput.remove()
+        window.utools.setSubInputValue('')
+        resetSearchResults()
+        setKeyword('')
+        setSearchText('')
       }
-      // 重置状态
-      setData([])
-      setColumns([])
-      setKeyword('')
-      setSearchText('')
     }
   }, [])
 
   useEffect(() => {
     if (!keyword || !searchText) {
-      message.warning('请通过 dict 指令进行搜索，格式：关键字:搜索内容')
       return
     }
 
@@ -47,20 +55,20 @@ const SearchPage = ({ enterAction }) => {
 
     if (keywordData.length === 0) {
       message.info('未找到相关数据，请使用 dictinput 指令录入数据')
+      resetSearchResults()
       return
     }
 
     // 生成表格列配置
     const firstRecord = keywordData[0]
     const cols = Object.keys(firstRecord)
-      .filter(key => key !== '_id' && key !== 'createTime') // 过滤掉 _id 和 createTime 列
+      .filter(key => key !== '_id' && key !== 'createTime')
       .map(key => ({
         title: key,
         dataIndex: key,
         key: key
       }))
 
-    // 将 createTime 列添加到最后
     cols.push({
       title: '创建时间',
       dataIndex: 'createTime',
@@ -74,9 +82,9 @@ const SearchPage = ({ enterAction }) => {
     // 搜索匹配的记录
     const filteredData = keywordData.filter(record => 
       Object.entries(record)
-        .filter(([key]) => key !== '_id') // 过滤掉 _id 字段的搜索
+        .filter(([key]) => key !== '_id')
         .some(([key, value]) => 
-          key !== 'createTime' && // 不搜索创建时间字段
+          key !== 'createTime' &&
           String(value).toLowerCase().includes(searchText.toLowerCase())
         )
     )
@@ -85,7 +93,7 @@ const SearchPage = ({ enterAction }) => {
   }, [keyword, searchText])
 
   return (
-    <Card title="搜索结果" style={{ margin: 16 }}>
+    <Card title={`搜索结果${data.length > 0 ? ` (共 ${data.length} 条)` : ''}`} style={{ margin: 16 }}>
       {data.length > 0 ? (
         <Table
           columns={columns}
