@@ -63,6 +63,19 @@ const ListPage = ({ enterAction }) => {
     setActiveTab(key)
     generateColumns(data[key])
     setSelectedRowKeys([])
+
+    // 检查是否有保存的配置
+    const savedConfig = savedConfigs[key]
+    if (savedConfig) {
+      setAggregateConfig(savedConfig)
+      const treeData = generateTreeData(data[key], savedConfig)
+      setTreeData(treeData)
+      setIsTreeView(true)
+    } else {
+      setIsTreeView(false)
+      setTreeData([])
+      setAggregateConfig([])
+    }
   }
 
   const handleDelete = () => {
