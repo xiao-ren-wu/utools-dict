@@ -46,27 +46,188 @@ textarea {
 
 @media (prefers-color-scheme: dark) {
   &::-webkit-scrollbar-track-piece {
-    background-color: #303133;
+    background-color: #1f1f1f;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: #666;
-    border-color: #303133;
+    background-color: #424242;
+    border-color: #1f1f1f;
   }
   body {
-    background-color: #303133;
+    background-color: #1f1f1f;
     color: #fff;
   }
 
-  /* 暗色模式下树状结构展开按钮的样式 */
-  .ant-tree-switcher {
+  /* 树状结构暗色模式样式 */
+  .dark-tree {
+    color: #fff;
+  }
+
+  .dark-tree .ant-tree-switcher {
+    color: #fff !important;
+    background: transparent !important;
+  }
+
+  .dark-tree .ant-tree-switcher-leaf {
+    color: #fff !important;
+    background: transparent !important;
+  }
+
+  .dark-tree .ant-tree-switcher-icon {
     color: #fff !important;
   }
-  
-  .ant-tree-switcher-leaf {
+
+  .dark-tree .ant-tree-node-content-wrapper {
     color: #fff !important;
   }
-  
-  .ant-tree-switcher-icon {
+
+  .dark-tree .ant-tree-node-content-wrapper:hover {
+    background-color: #2a2a2a !important;
+  }
+
+  .dark-tree .ant-tree-node-selected {
+    background-color: #2a2a2a !important;
+  }
+
+  .dark-tree .ant-tree-title {
     color: #fff !important;
+  }
+
+  .dark-tree .ant-tree-list-holder-inner {
+    background: transparent !important;
+  }
+
+  /* 树状结构中的表格样式 */
+  .dark-tree .ant-table {
+    background: transparent !important;
+  }
+
+  .dark-tree .ant-table-thead > tr > th {
+    background: #2a2a2a !important;
+    color: #fff !important;
+    border-bottom-color: #303030 !important;
+  }
+
+  .dark-tree .ant-table-tbody > tr > td {
+    background: transparent !important;
+    color: #fff !important;
+    border-bottom-color: #303030 !important;
+  }
+
+  .dark-tree .ant-table-tbody > tr:hover > td {
+    background: #2a2a2a !important;
+  }
+
+  /* 树状结构中的文字样式 */
+  .dark-tree .ant-typography {
+    color: #fff !important;
+  }
+
+  .dark-tree .ant-tooltip {
+    color: #fff !important;
+  }
+
+  /* 树状结构中的边框样式 */
+  .dark-tree .ant-table-cell {
+    border-color: #303030 !important;
+  }
+
+  /* 其他组件样式保持不变 */
+  .ant-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .ant-card-head {
+    border-bottom-color: #303030;
+  }
+
+  .ant-table {
+    background-color: #1f1f1f;
+    color: #fff;
+  }
+
+  .ant-table-thead > tr > th {
+    background-color: #2a2a2a !important;
+    color: #fff !important;
+    border-bottom-color: #303030 !important;
+  }
+
+  .ant-table-tbody > tr > td {
+    background-color: #1f1f1f !important;
+    color: #fff !important;
+    border-bottom-color: #303030 !important;
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    background-color: #2a2a2a !important;
+  }
+
+  .ant-tabs {
+    color: #fff;
+  }
+
+  .ant-tabs-tab {
+    color: #fff !important;
+  }
+
+  .ant-tabs-tab-active {
+    background-color: #2a2a2a !important;
+  }
+
+  .ant-tabs-ink-bar {
+    background-color: #1890ff !important;
+  }
+
+  .ant-btn {
+    border-color: #303030;
+  }
+
+  .ant-btn-default {
+    background-color: #2a2a2a;
+    color: #fff;
+  }
+
+  .ant-btn-default:hover {
+    background-color: #303030;
+    border-color: #1890ff;
+    color: #1890ff;
+  }
+
+  .ant-modal-content {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .ant-modal-header {
+    background-color: #1f1f1f;
+    border-bottom-color: #303030;
+  }
+
+  .ant-modal-footer {
+    border-top-color: #303030;
+  }
+
+  .ant-input {
+    background-color: #2a2a2a;
+    border-color: #303030;
+    color: #fff;
+  }
+
+  .ant-input:hover,
+  .ant-input:focus {
+    border-color: #1890ff;
+  }
+
+  .ant-dropdown-menu {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .ant-dropdown-menu-item {
+    color: #fff;
+  }
+
+  .ant-dropdown-menu-item:hover {
+    background-color: #2a2a2a;
   }
 }

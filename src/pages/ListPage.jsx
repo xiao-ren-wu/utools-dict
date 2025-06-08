@@ -316,7 +316,7 @@ const ListPage = ({ enterAction }) => {
                 <div style={{
                   display: 'flex',
                   padding: '8px',
-                  background: '#fff',
+                  background: 'transparent',
                   border: '1px solid #f0f0f0',
                   borderTop: 'none',
                   borderRadius: '0 0 4px 4px',
@@ -326,16 +326,16 @@ const ListPage = ({ enterAction }) => {
                 }}>
                   {leafData.map(([key, value]) => (
                     <div key={key} style={{
-                      width: '100px',
+                      width: '90px',
                       padding: '0 4px',
-                      color: '#666',
+                      color: '#fff',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       flexShrink: 0
                     }}>
                       <Tooltip title={value}>
-                        <Typography.Text>
+                        <Typography.Text style={{ color: '#fff' }}>
                           {value}
                         </Typography.Text>
                       </Tooltip>
@@ -490,8 +490,9 @@ const ListPage = ({ enterAction }) => {
           <div style={{ width: '100%', overflow: 'hidden' }}>
             <Tree
               treeData={treeData}
+              className="dark-tree"
               style={{
-                background: '#fff',
+                background: 'transparent',
                 padding: '16px',
                 borderRadius: '8px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
