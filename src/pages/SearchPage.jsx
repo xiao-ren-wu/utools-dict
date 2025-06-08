@@ -54,7 +54,7 @@ const SearchPage = ({ enterAction }) => {
         setSearchText('')
       }
     }
-  }, [])
+  }, [enterAction])
 
   const generateTreeData = (records, config) => {
     if (!config || config.length === 0) return []
