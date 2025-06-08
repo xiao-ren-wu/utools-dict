@@ -56,4 +56,17 @@ textarea {
     background-color: #303133;
     color: #fff;
   }
+
+  /* 暗色模式下树状结构展开按钮的样式 */
+  .ant-tree-switcher {
+    color: #fff !important;
+  }
+  
+  .ant-tree-switcher-leaf {
+    color: #fff !important;
+  }
+  
+  .ant-tree-switcher-icon {
+    color: #fff !important;
+  }
 }
