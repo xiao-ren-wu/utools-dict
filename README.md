@@ -94,6 +94,12 @@
   
 ![dict](/docs/dictlist.png)
 
+### 4. 层级聚合
+- 选中父级结点作为聚合结点
+![levelset](/docs/levelset.png)
+- 显示效果
+![levelshow](/docs/levelshow.png)
+
 ## 🌈 界面特性
 
 - 采用 Ant Design 设计规范
@@ -176,5 +182,6 @@
   - 优化长文本显示效果
 
 ---
+
 
 欢迎使用数据字典管理器，让数据管理变得更简单！ 
