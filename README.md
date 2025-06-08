@@ -16,6 +16,64 @@
   {"name": "李四", "age": 28, "job": "设计师"}
 ]
 ```
+
+层级聚合示例数据：
+```json
+[
+  {
+    "department": "技术部",
+    "team": "前端组",
+    "name": "张三",
+    "position": "高级工程师",
+    "level": "P7",
+    "skills": ["React", "Vue", "TypeScript"],
+    "projects": ["电商平台", "管理系统"]
+  },
+  {
+    "department": "技术部",
+    "team": "前端组",
+    "name": "李四",
+    "position": "工程师",
+    "level": "P6",
+    "skills": ["Vue", "JavaScript"],
+    "projects": ["管理系统"]
+  },
+  {
+    "department": "技术部",
+    "team": "后端组",
+    "name": "王五",
+    "position": "高级工程师",
+    "level": "P7",
+    "skills": ["Java", "Spring", "MySQL"],
+    "projects": ["支付系统", "订单系统"]
+  },
+  {
+    "department": "产品部",
+    "team": "产品组",
+    "name": "赵六",
+    "position": "产品经理",
+    "level": "P7",
+    "skills": ["产品设计", "用户研究"],
+    "projects": ["电商平台", "支付系统"]
+  },
+  {
+    "department": "产品部",
+    "team": "设计组",
+    "name": "钱七",
+    "position": "UI设计师",
+    "level": "P6",
+    "skills": ["Figma", "Sketch"],
+    "projects": ["管理系统"]
+  }
+]
+```
+
+使用说明：
+1. 可以按部门（department）作为第一层级
+2. 可以按团队（team）作为第二层级
+3. 可以按职级（level）作为第三层级
+4. 最终展示每个人的详细信息
+
 ![dictinput](/docs/dictinput.png)
 
 ### 2. 智能搜索 (dict)
@@ -102,6 +160,20 @@
 - 支持批量删除和清理
 - 优化表格显示效果
 - 适配系统主题切换
+
+### v1.1.0
+- 新增层级结构聚合功能
+  - 支持多层级数据聚合展示
+  - 可自定义配置聚合层级和列
+  - 支持保存和加载聚合配置
+- 优化数据展示界面
+  - 添加树状结构展示模式
+  - 优化暗色模式适配
+  - 改进数据统计显示
+- 增强交互体验
+  - 添加高级功能下拉菜单
+  - 支持列表/树状视图切换
+  - 优化长文本显示效果
 
 ---
 
