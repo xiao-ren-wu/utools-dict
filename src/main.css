@@ -46,14 +46,14 @@ textarea {
 
 @media (prefers-color-scheme: dark) {
   &::-webkit-scrollbar-track-piece {
-    background-color: #1f1f1f;
+    background-color: #303133;
   }
   &::-webkit-scrollbar-thumb {
     background-color: #424242;
-    border-color: #1f1f1f;
+    border-color: #303133;
   }
   body {
-    background-color: #1f1f1f;
+    background-color: #303133;
     color: #fff;
   }
 
@@ -81,11 +81,11 @@ textarea {
   }
 
   .dark-tree .ant-tree-node-content-wrapper:hover {
-    background-color: #2a2a2a !important;
+    background-color: #3a3a3a !important;
   }
 
   .dark-tree .ant-tree-node-selected {
-    background-color: #2a2a2a !important;
+    background-color: #3a3a3a !important;
   }
 
   .dark-tree .ant-tree-title {
@@ -102,19 +102,19 @@ textarea {
   }
 
   .dark-tree .ant-table-thead > tr > th {
-    background: #2a2a2a !important;
+    background: #3a3a3a !important;
     color: #fff !important;
-    border-bottom-color: #303030 !important;
+    border-bottom-color: #404040 !important;
   }
 
   .dark-tree .ant-table-tbody > tr > td {
     background: transparent !important;
     color: #fff !important;
-    border-bottom-color: #303030 !important;
+    border-bottom-color: #404040 !important;
   }
 
   .dark-tree .ant-table-tbody > tr:hover > td {
-    background: #2a2a2a !important;
+    background: #3a3a3a !important;
   }
 
   /* 树状结构中的文字样式 */
@@ -128,38 +128,38 @@ textarea {
 
   /* 树状结构中的边框样式 */
   .dark-tree .ant-table-cell {
-    border-color: #303030 !important;
+    border-color: #404040 !important;
   }
 
-  /* 其他组件样式保持不变 */
+  /* 其他组件样式 */
   .ant-card {
-    background-color: #1f1f1f;
-    border-color: #303030;
+    background-color: #303133;
+    border-color: #404040;
   }
 
   .ant-card-head {
-    border-bottom-color: #303030;
+    border-bottom-color: #404040;
   }
 
   .ant-table {
-    background-color: #1f1f1f;
+    background-color: #303133;
     color: #fff;
   }
 
   .ant-table-thead > tr > th {
-    background-color: #2a2a2a !important;
+    background-color: #3a3a3a !important;
     color: #fff !important;
-    border-bottom-color: #303030 !important;
+    border-bottom-color: #404040 !important;
   }
 
   .ant-table-tbody > tr > td {
-    background-color: #1f1f1f !important;
+    background-color: #303133 !important;
     color: #fff !important;
-    border-bottom-color: #303030 !important;
+    border-bottom-color: #404040 !important;
   }
 
   .ant-table-tbody > tr:hover > td {
-    background-color: #2a2a2a !important;
+    background-color: #3a3a3a !important;
   }
 
   .ant-tabs {
@@ -171,7 +171,7 @@ textarea {
   }
 
   .ant-tabs-tab-active {
-    background-color: #2a2a2a !important;
+    background-color: #3a3a3a !important;
   }
 
   .ant-tabs-ink-bar {
@@ -179,37 +179,37 @@ textarea {
   }
 
   .ant-btn {
-    border-color: #303030;
+    border-color: #404040;
   }
 
   .ant-btn-default {
-    background-color: #2a2a2a;
+    background-color: #3a3a3a;
     color: #fff;
   }
 
   .ant-btn-default:hover {
-    background-color: #303030;
+    background-color: #404040;
     border-color: #1890ff;
     color: #1890ff;
   }
 
   .ant-modal-content {
-    background-color: #1f1f1f;
-    border-color: #303030;
+    background-color: #303133;
+    border-color: #404040;
   }
 
   .ant-modal-header {
-    background-color: #1f1f1f;
-    border-bottom-color: #303030;
+    background-color: #303133;
+    border-bottom-color: #404040;
   }
 
   .ant-modal-footer {
-    border-top-color: #303030;
+    border-top-color: #404040;
   }
 
   .ant-input {
-    background-color: #2a2a2a;
-    border-color: #303030;
+    background-color: #3a3a3a;
+    border-color: #404040;
     color: #fff;
   }
 
@@ -219,8 +219,8 @@ textarea {
   }
 
   .ant-dropdown-menu {
-    background-color: #1f1f1f;
-    border-color: #303030;
+    background-color: #303133;
+    border-color: #404040;
   }
 
   .ant-dropdown-menu-item {
@@ -228,6 +228,6 @@ textarea {
   }
 
   .ant-dropdown-menu-item:hover {
-    background-color: #2a2a2a;
+    background-color: #3a3a3a;
   }
 }
