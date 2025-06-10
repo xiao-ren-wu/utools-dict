@@ -45,6 +45,15 @@ const ThemeWrapper = () => {
     <ConfigProvider
       theme={{
         algorithm: themeConfig.isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: themeConfig.isDarkMode ? {
+          colorBgContainer: '#2a2a2a',
+          colorBgElevated: '#333333',
+          colorBgLayout: '#1f1f1f',
+          colorText: 'rgba(255, 255, 255, 0.85)',
+          colorTextSecondary: 'rgba(255, 255, 255, 0.65)',
+          colorBorder: '#434343',
+          colorBorderSecondary: '#404040',
+        } : undefined
       }}
     >
       <App>
