@@ -24,6 +24,14 @@ const ListPage = ({ enterAction }) => {
     loadData()
   }, [])
 
+  // 监听主题变化，重新生成树状结构
+  useEffect(() => {
+    if (isTreeView && activeTab && data[activeTab]) {
+      const newTreeData = generateTreeData(data[activeTab], aggregateConfig)
+      setTreeData(newTreeData)
+    }
+  }, [themeConfig.isDarkMode])
+
   const loadData = () => {
     const allData = window.utools.dbStorage.getItem('dict_data') || {}
     const savedConfigs = window.utools.dbStorage.getItem('dict_aggregate_configs') || {}
@@ -183,6 +191,137 @@ const ListPage = ({ enterAction }) => {
     })
   }
 
+  const getNodeStyles = (level) => {
+    if (themeConfig.isDarkMode) {
+      return {
+        container: {
+          padding: '4px 8px',
+          background: level === 0 ? '#1a1a1a' : '#1f1f1f',
+          borderRadius: '4px',
+          border: '1px solid #434343',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        text: {
+          display: 'inline-block',
+          marginRight: '16px',
+          fontSize: '14px',
+          color: level === 0 ? '#177ddc' : '#49aa19'
+        },
+        count: {
+          fontSize: '12px',
+          color: level === 0 ? '#177ddc' : '#49aa19',
+          background: level === 0 ? '#111b26' : '#162312',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: level === 0 ? '#177ddc' : '#49aa19'
+        }
+      }
+    } else {
+      return {
+        container: {
+          padding: '4px 8px',
+          background: level === 0 ? '#f0f5ff' : '#f6ffed',
+          borderRadius: '4px',
+          border: '1px solid',
+          borderColor: level === 0 ? '#91caff' : '#b7eb8f',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        text: {
+          display: 'inline-block',
+          marginRight: '16px',
+          fontSize: '14px',
+          color: level === 0 ? '#1677ff' : '#52c41a'
+        },
+        count: {
+          fontSize: '12px',
+          color: level === 0 ? '#1677ff' : '#52c41a',
+          background: level === 0 ? '#e6f4ff' : '#f6ffed',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: level === 0 ? '#91caff' : '#b7eb8f'
+        }
+      }
+    }
+  }
+
+  const getHeaderStyles = () => {
+    if (themeConfig.isDarkMode) {
+      return {
+        container: {
+          display: 'flex',
+          background: '#1a1a1a',
+          padding: '8px',
+          borderRadius: '4px 4px 0 0',
+          border: '1px solid #434343',
+          borderBottom: 'none',
+          width: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        column: {
+          width: '90px',
+          padding: '0 4px',
+          fontWeight: 'bold',
+          color: '#177ddc',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          flexShrink: 0
+        },
+        count: {
+          fontSize: '12px',
+          color: '#177ddc',
+          background: '#111b26',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid #177ddc'
+        }
+      }
+    } else {
+      return {
+        container: {
+          display: 'flex',
+          background: '#f0f5ff',
+          padding: '8px',
+          borderRadius: '4px 4px 0 0',
+          border: '1px solid #91caff',
+          borderBottom: 'none',
+          width: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        column: {
+          width: '90px',
+          padding: '0 4px',
+          fontWeight: 'bold',
+          color: '#1677ff',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          flexShrink: 0
+        },
+        count: {
+          fontSize: '12px',
+          color: '#1677ff',
+          background: '#e6f4ff',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid #91caff'
+        }
+      }
+    }
+  }
+
   const generateTreeData = (records, config) => {
     if (!config || config.length === 0) return []
 
@@ -195,6 +334,7 @@ const ListPage = ({ enterAction }) => {
 
       const currentConfig = config[level]
       const groups = {}
+      const styles = getNodeStyles(level)
 
       data.forEach(record => {
         const key = currentConfig.columns.map(col => record[col]).join('-')
@@ -202,37 +342,15 @@ const ListPage = ({ enterAction }) => {
           groups[key] = {
             key,
             title: (
-              <div style={{ 
-                padding: '4px 8px',
-                background: level === 0 ? '#f0f5ff' : '#f6ffed',
-                borderRadius: '4px',
-                border: '1px solid',
-                borderColor: level === 0 ? '#91caff' : '#b7eb8f',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
+              <div style={styles.container}>
                 <div>
                   {currentConfig.columns.map(col => (
-                    <div key={col} style={{ 
-                      display: 'inline-block',
-                      marginRight: '16px',
-                      fontSize: '14px',
-                      color: level === 0 ? '#1677ff' : '#52c41a'
-                    }}>
+                    <div key={col} style={styles.text}>
                       <span style={{ fontWeight: 'bold' }}>{col}:</span> {record[col]}
                     </div>
                   ))}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: level === 0 ? '#1677ff' : '#52c41a',
-                  background: level === 0 ? '#e6f4ff' : '#f6ffed',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  border: '1px solid',
-                  borderColor: level === 0 ? '#91caff' : '#b7eb8f'
-                }}>
+                <div style={styles.count}>
                   包含 {data.filter(r => currentConfig.columns.every(col => r[col] === record[col])).length} 条记录
                 </div>
               </div>
@@ -248,6 +366,7 @@ const ListPage = ({ enterAction }) => {
         if (level < config.length - 1) {
           group.children = buildTree(group.data, level + 1)
         } else {
+          const headerStyles = getHeaderStyles()
           group.children = [{
             key: 'header',
             title: (() => {
@@ -259,45 +378,17 @@ const ListPage = ({ enterAction }) => {
                 )
 
               return (
-                <div style={{
-                  display: 'flex',
-                  background: '#f0f5ff',
-                  padding: '8px',
-                  borderRadius: '4px 4px 0 0',
-                  border: '1px solid #91caff',
-                  borderBottom: 'none',
-                  width: '100%',
-                  overflow: 'hidden',
-                  boxSizing: 'border-box',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
+                <div style={headerStyles.container}>
                   <div style={{ display: 'flex' }}>
                     {leafColumns.map(key => (
-                      <div key={key} style={{
-                        width: '90px',
-                        padding: '0 4px',
-                        fontWeight: 'bold',
-                        color: '#1677ff',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
+                      <div key={key} style={headerStyles.column}>
                         <Tooltip title={key}>
                           {key}
                         </Tooltip>
                       </div>
                     ))}
                   </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#1677ff',
-                    background: '#e6f4ff',
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    border: '1px solid #91caff'
-                  }}>
+                  <div style={headerStyles.count}>
                     共 {group.data.length} 条记录
                   </div>
                 </div>
@@ -318,7 +409,8 @@ const ListPage = ({ enterAction }) => {
                   display: 'flex',
                   padding: '8px',
                   background: 'transparent',
-                  border: '1px solid #f0f0f0',
+                  border: '1px solid',
+                  borderColor: themeConfig.isDarkMode ? '#434343' : '#f0f0f0',
                   borderTop: 'none',
                   borderRadius: '0 0 4px 4px',
                   width: '100%',
