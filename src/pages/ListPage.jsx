@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography } from 'antd'
+import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography, Switch } from 'antd'
 import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { useTheme } from '../contexts/ThemeContext'
 
 const ListPage = ({ enterAction }) => {
   const [activeTab, setActiveTab] = useState('')
@@ -16,6 +17,7 @@ const ListPage = ({ enterAction }) => {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(null)
   const [selectedColumns, setSelectedColumns] = useState([])
   const [savedConfigs, setSavedConfigs] = useState({})
+  const { themeConfig, updateThemeConfig } = useTheme()
   const { modal } = App.useApp()
 
   useEffect(() => {
@@ -252,7 +254,6 @@ const ListPage = ({ enterAction }) => {
               const leafColumns = Object.keys(group.data[0])
                 .filter(key => 
                   key !== '_id' && 
-                  key !== '_id' && 
                   key !== 'createTime' && 
                   !aggregateColumns.includes(key)
                 )
@@ -328,14 +329,13 @@ const ListPage = ({ enterAction }) => {
                     <div key={key} style={{
                       width: '90px',
                       padding: '0 4px',
-                      color: '#fff',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       flexShrink: 0
                     }}>
                       <Tooltip title={value}>
-                        <Typography.Text style={{ color: '#fff' }}>
+                        <Typography.Text>
                           {value}
                         </Typography.Text>
                       </Tooltip>
@@ -397,6 +397,22 @@ const ListPage = ({ enterAction }) => {
     setIsTreeView(false)
     setTreeData([])
     setAggregateConfig([])
+  }
+
+  const handleThemeChange = (followSystem) => {
+    const newConfig = {
+      followSystem,
+      isDarkMode: followSystem ? window.matchMedia('(prefers-color-scheme: dark)').matches : themeConfig.isDarkMode
+    }
+    updateThemeConfig(newConfig)
+  }
+
+  const handleDarkModeChange = (isDarkMode) => {
+    const newConfig = {
+      ...themeConfig,
+      isDarkMode
+    }
+    updateThemeConfig(newConfig)
   }
 
   const aggregateModalContent = (
@@ -523,7 +539,25 @@ const ListPage = ({ enterAction }) => {
   }))
 
   return (
-    <Card title="数据字典列表" style={{ margin: 16 }}>
+    <Card 
+      title="数据字典列表" 
+      style={{ margin: 16 }}
+      extra={
+        <Space>
+          <span>跟随系统</span>
+          <Switch
+            checked={themeConfig.followSystem}
+            onChange={handleThemeChange}
+          />
+          <span>暗色主题</span>
+          <Switch
+            checked={themeConfig.isDarkMode}
+            onChange={handleDarkModeChange}
+            disabled={themeConfig.followSystem}
+          />
+        </Space>
+      }
+    >
       {items.length > 0 ? (
         <>
           <Tabs
