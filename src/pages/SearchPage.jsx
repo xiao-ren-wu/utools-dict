@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Card, Table, Empty, message, Tree, Button, Tooltip, Typography } from 'antd'
 import dayjs from 'dayjs'
+import { renderHyperlink, getSearchableText, handleHyperlinkClick } from '../utils/hyperlinkUtils'
 
 const SearchPage = ({ enterAction }) => {
   const location = useLocation()
@@ -413,7 +414,29 @@ const SearchPage = ({ enterAction }) => {
                     }}>
                       <Tooltip title={value}>
                         <Typography.Text>
-                          {value}
+                          {(() => {
+                            const linkInfo = renderHyperlink(value)
+                            if (linkInfo.isHyperlink) {
+                              return (
+                                <a
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleHyperlinkClick(linkInfo.url)
+                                  }}
+                                  style={{
+                                    color: '#1890ff',
+                                    textDecoration: 'underline',
+                                    cursor: 'pointer'
+                                  }}
+                                  title={`点击打开: ${linkInfo.url}`}
+                                >
+                                  {linkInfo.displayText}
+                                </a>
+                              )
+                            }
+                            return linkInfo.displayText
+                          })()}
                         </Typography.Text>
                       </Tooltip>
                     </div>
@@ -453,7 +476,30 @@ const SearchPage = ({ enterAction }) => {
       .map(key => ({
         title: key,
         dataIndex: key,
-        key: key
+        key: key,
+        render: (text) => {
+          const linkInfo = renderHyperlink(text)
+          if (linkInfo.isHyperlink) {
+            return (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleHyperlinkClick(linkInfo.url)
+                }}
+                style={{
+                  color: '#1890ff',
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
+                }}
+                title={`点击打开: ${linkInfo.url}`}
+              >
+                {linkInfo.displayText}
+              </a>
+            )
+          }
+          return linkInfo.displayText
+        }
       }))
 
     cols.push({
@@ -474,7 +520,7 @@ const SearchPage = ({ enterAction }) => {
           .filter(([key]) => key !== '_id')
           .some(([key, value]) => 
             key !== 'createTime' &&
-            String(value).toLowerCase().includes(searchText.toLowerCase())
+            getSearchableText(String(value)).toLowerCase().includes(searchText.toLowerCase())
           )
       )
     }

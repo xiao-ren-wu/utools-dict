@@ -3,6 +3,7 @@ import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, 
 import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined, EditOutlined, ExportOutlined, KeyOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useTheme } from '../contexts/ThemeContext'
+import { renderHyperlink, handleHyperlinkClick } from '../utils/hyperlinkUtils'
 
 const ListPage = ({ enterAction }) => {
   const [activeTab, setActiveTab] = useState('')
@@ -61,7 +62,30 @@ const ListPage = ({ enterAction }) => {
       .map(key => ({
         title: key,
         dataIndex: key,
-        key: key
+        key: key,
+        render: (text) => {
+          const linkInfo = renderHyperlink(text)
+          if (linkInfo.isHyperlink) {
+            return (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleHyperlinkClick(linkInfo.url)
+                }}
+                style={{
+                  color: '#1890ff',
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
+                }}
+                title={`点击打开: ${linkInfo.url}`}
+              >
+                {linkInfo.displayText}
+              </a>
+            )
+          }
+          return linkInfo.displayText
+        }
       }))
 
     cols.push({
@@ -530,7 +554,29 @@ const ListPage = ({ enterAction }) => {
                     }}>
                       <Tooltip title={value}>
                         <Typography.Text>
-                          {value}
+                          {(() => {
+                            const linkInfo = renderHyperlink(value)
+                            if (linkInfo.isHyperlink) {
+                              return (
+                                <a
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleHyperlinkClick(linkInfo.url)
+                                  }}
+                                  style={{
+                                    color: '#1890ff',
+                                    textDecoration: 'underline',
+                                    cursor: 'pointer'
+                                  }}
+                                  title={`点击打开: ${linkInfo.url}`}
+                                >
+                                  {linkInfo.displayText}
+                                </a>
+                              )
+                            }
+                            return linkInfo.displayText
+                          })()}
                         </Typography.Text>
                       </Tooltip>
                     </div>
