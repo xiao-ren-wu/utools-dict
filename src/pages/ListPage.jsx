@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography, Switch } from 'antd'
-import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons'
+import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography, Switch, Form, Input, Select } from 'antd'
+import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -17,6 +17,11 @@ const ListPage = ({ enterAction }) => {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(null)
   const [selectedColumns, setSelectedColumns] = useState([])
   const [savedConfigs, setSavedConfigs] = useState({})
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null)
+  const [editForm] = Form.useForm()
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false)
+  const [addForm] = Form.useForm()
   const { themeConfig, updateThemeConfig } = useTheme()
   const { modal } = App.useApp()
 
@@ -64,6 +69,23 @@ const ListPage = ({ enterAction }) => {
       width: 180,
       sorter: (a, b) => dayjs(a.createTime).unix() - dayjs(b.createTime).unix(),
       defaultSortOrder: 'descend'
+    })
+
+    // 添加操作列
+    cols.push({
+      title: '操作',
+      key: 'action',
+      width: 120,
+      render: (_, record) => (
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+          size="small"
+        >
+          编辑
+        </Button>
+      )
     })
     
     setColumns(cols)
@@ -143,6 +165,84 @@ const ListPage = ({ enterAction }) => {
         message.success('清空成功')
       }
     })
+  }
+
+  const handleEdit = (record) => {
+    setEditingRecord(record)
+    editForm.setFieldsValue(record)
+    setIsEditModalVisible(true)
+  }
+
+  const handleEditConfirm = async () => {
+    try {
+      const values = await editForm.validateFields()
+      const newData = { ...data }
+      const recordIndex = newData[activeTab].findIndex(item => item._id === editingRecord._id)
+      
+      if (recordIndex !== -1) {
+        newData[activeTab][recordIndex] = {
+          ...newData[activeTab][recordIndex],
+          ...values
+        }
+        
+        window.utools.dbStorage.setItem('dict_data', newData)
+        setData(newData)
+        setIsEditModalVisible(false)
+        setEditingRecord(null)
+        editForm.resetFields()
+        message.success('编辑成功')
+        
+        // 重新加载数据并刷新页面显示
+        loadData()
+      }
+    } catch (error) {
+      console.error('编辑失败:', error)
+    }
+  }
+
+  const handleEditCancel = () => {
+    setIsEditModalVisible(false)
+    setEditingRecord(null)
+    editForm.resetFields()
+  }
+
+  const handleAdd = () => {
+    if (!activeTab) {
+      message.warning('请先选择要添加记录的分类')
+      return
+    }
+    setIsAddModalVisible(true)
+    addForm.resetFields()
+  }
+
+  const handleAddConfirm = async () => {
+    try {
+      const values = await addForm.validateFields()
+      const newRecord = {
+        ...values,
+        _id: Date.now().toString(),
+        createTime: dayjs().format('YYYY-MM-DD HH:mm:ss')
+      }
+      
+      const newData = { ...data }
+      newData[activeTab] = [...newData[activeTab], newRecord]
+      
+      window.utools.dbStorage.setItem('dict_data', newData)
+      setData(newData)
+      setIsAddModalVisible(false)
+      addForm.resetFields()
+      message.success('添加成功')
+      
+      // 重新加载数据并刷新页面显示
+      loadData()
+    } catch (error) {
+      console.error('添加失败:', error)
+    }
+  }
+
+  const handleAddCancel = () => {
+    setIsAddModalVisible(false)
+    addForm.resetFields()
   }
 
   const handleAggregate = () => {
@@ -557,6 +657,13 @@ const ListPage = ({ enterAction }) => {
         <Space style={{ marginBottom: 16 }}>
           <Button
             type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
+            添加记录
+          </Button>
+          <Button
+            type="primary"
             danger
             icon={<DeleteOutlined />}
             onClick={handleDelete}
@@ -710,6 +817,54 @@ const ListPage = ({ enterAction }) => {
                   ))}
               </div>
             </div>
+          </Modal>
+          <Modal
+            title="编辑记录"
+            open={isEditModalVisible}
+            onOk={handleEditConfirm}
+            onCancel={handleEditCancel}
+            width={600}
+          >
+            <Form
+              form={editForm}
+              layout="vertical"
+            >
+              {columns
+                .filter(col => col.dataIndex !== 'createTime' && col.key !== 'action')
+                .map(col => (
+                  <Form.Item
+                    key={col.dataIndex}
+                    label={col.title}
+                    name={col.dataIndex}
+                  >
+                    <Input />
+                  </Form.Item>
+                ))}
+            </Form>
+          </Modal>
+          <Modal
+            title="添加记录"
+            open={isAddModalVisible}
+            onOk={handleAddConfirm}
+            onCancel={handleAddCancel}
+            width={600}
+          >
+            <Form
+              form={addForm}
+              layout="vertical"
+            >
+              {columns
+                .filter(col => col.dataIndex !== 'createTime' && col.key !== 'action')
+                .map(col => (
+                  <Form.Item
+                    key={col.dataIndex}
+                    label={col.title}
+                    name={col.dataIndex}
+                  >
+                    <Input />
+                  </Form.Item>
+                ))}
+            </Form>
           </Modal>
         </>
       ) : (
