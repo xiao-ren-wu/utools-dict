@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography, Switch, Form, Input, Select } from 'antd'
-import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined, EditOutlined, ExportOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined, EditOutlined, ExportOutlined, KeyOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -22,6 +22,8 @@ const ListPage = ({ enterAction }) => {
   const [editForm] = Form.useForm()
   const [isAddModalVisible, setIsAddModalVisible] = useState(false)
   const [addForm] = Form.useForm()
+  const [isManualInputModalVisible, setIsManualInputModalVisible] = useState(false)
+  const [manualInputForm] = Form.useForm()
   const { themeConfig, updateThemeConfig } = useTheme()
   const { modal } = App.useApp()
 
@@ -647,6 +649,97 @@ const ListPage = ({ enterAction }) => {
     }
   }
 
+  const handleManualInput = () => {
+    setIsManualInputModalVisible(true)
+    manualInputForm.resetFields()
+  }
+
+  const handleManualInputConfirm = async () => {
+    try {
+      const values = await manualInputForm.validateFields()
+      const { keyword, headers } = values
+      
+      // 检查关键字是否已存在
+      if (data[keyword]) {
+        message.error(`关键字"${keyword}"已存在，请使用其他关键字`)
+        return
+      }
+      
+      // 解析表头，支持逗号、分号、换行符分隔
+      const headerList = headers
+        .split(/[,;\n]/)
+        .map(header => header.trim())
+        .filter(header => header.length > 0)
+      
+      if (headerList.length === 0) {
+        message.error('请输入至少一个表头')
+        return
+      }
+
+      // 创建新的分类
+      const newData = { ...data }
+      newData[keyword] = []
+      
+      // 保存到数据库
+      window.utools.dbStorage.setItem('dict_data', newData)
+      setData(newData)
+      
+      // 切换到新创建的分类
+      setActiveTab(keyword)
+      
+      // 根据用户输入的表头生成列结构
+      const cols = headerList.map(header => ({
+        title: header,
+        dataIndex: header,
+        key: header
+      }))
+
+      // 添加创建时间列
+      cols.push({
+        title: '创建时间',
+        dataIndex: 'createTime',
+        key: 'createTime',
+        width: 180,
+        sorter: (a, b) => dayjs(a.createTime).unix() - dayjs(b.createTime).unix(),
+        defaultSortOrder: 'descend'
+      })
+
+      // 添加操作列
+      cols.push({
+        title: '操作',
+        key: 'action',
+        width: 120,
+        render: (_, record) => (
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+          >
+            编辑
+          </Button>
+        )
+      })
+      
+      setColumns(cols)
+      
+      setIsManualInputModalVisible(false)
+      manualInputForm.resetFields()
+      message.success(`成功创建分类"${keyword}"，包含 ${headerList.length} 个表头`)
+      
+      // 显示表头信息
+      message.info(`表头: ${headerList.join(', ')}`)
+      
+    } catch (error) {
+      console.error('创建失败:', error)
+    }
+  }
+
+  const handleManualInputCancel = () => {
+    setIsManualInputModalVisible(false)
+    manualInputForm.resetFields()
+  }
+
   const aggregateModalContent = (
     <div>
       {aggregateConfig.map((level, index) => (
@@ -789,6 +882,14 @@ const ListPage = ({ enterAction }) => {
       style={{ margin: 16 }}
       extra={
         <Space>
+          <Button
+            type="primary"
+            icon={<KeyOutlined />}
+            onClick={handleManualInput}
+            size="small"
+          >
+            手动录入
+          </Button>
           <span>跟随系统</span>
           <Switch
             checked={themeConfig.followSystem}
@@ -910,6 +1011,54 @@ const ListPage = ({ enterAction }) => {
                     <Input />
                   </Form.Item>
                 ))}
+            </Form>
+          </Modal>
+          <Modal
+            title="手动录入关键字"
+            open={isManualInputModalVisible}
+            onOk={handleManualInputConfirm}
+            onCancel={handleManualInputCancel}
+            width={600}
+          >
+            <Form
+              form={manualInputForm}
+              layout="vertical"
+            >
+              <Form.Item
+                label="关键字（分类名称）"
+                name="keyword"
+                rules={[
+                  { required: true, message: '请输入关键字' },
+                  { min: 1, message: '关键字不能为空' },
+                  {
+                    validator: (_, value) => {
+                      if (value && data[value]) {
+                        return Promise.reject(new Error('该关键字已存在，请使用其他关键字'))
+                      }
+                      return Promise.resolve()
+                    }
+                  }
+                ]}
+                extra="请输入唯一的分类名称，用于标识此数据字典"
+              >
+                <Input 
+                  placeholder="例如：用户信息、产品列表、员工档案等"
+                />
+              </Form.Item>
+              <Form.Item
+                label="表头"
+                name="headers"
+                rules={[
+                  { required: true, message: '请输入表头' },
+                  { min: 1, message: '表头不能为空' }
+                ]}
+                extra="请输入表头，多个表头用逗号、分号或换行符分隔"
+              >
+                <Input.TextArea 
+                  placeholder="例如：姓名,年龄,性别&#10;或者：姓名;年龄;性别&#10;或者每行一个：&#10;姓名&#10;年龄&#10;性别"
+                  rows={6}
+                />
+              </Form.Item>
             </Form>
           </Modal>
         </>
