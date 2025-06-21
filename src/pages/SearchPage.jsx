@@ -12,6 +12,11 @@ const SearchPage = ({ enterAction }) => {
   const [treeData, setTreeData] = useState([])
   const [isTreeView, setIsTreeView] = useState(false)
   const [savedConfigs, setSavedConfigs] = useState({})
+  const [availableKeywords, setAvailableKeywords] = useState([])
+  const [currentSuggestion, setCurrentSuggestion] = useState('')
+  const [suggestionIndex, setSuggestionIndex] = useState(-1)
+  const [allSuggestions, setAllSuggestions] = useState([])
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
 
   // 重置搜索结果状态
   const resetSearchResults = () => {
@@ -25,36 +30,234 @@ const SearchPage = ({ enterAction }) => {
     // 加载保存的配置
     const savedConfigs = window.utools.dbStorage.getItem('dict_aggregate_configs') || {}
     setSavedConfigs(savedConfigs)
+    
+    // 获取所有可用的关键字
+    const allData = window.utools.dbStorage.getItem('dict_data') || {}
+    const keywords = Object.keys(allData).filter(key => key.trim() !== '')
+    setAvailableKeywords(keywords)
   }, [])
 
-  useEffect(() => {
-    // 设置 uTools 子输入框
-    const subInput = window.utools.setSubInput(({ text }) => {
-      if (text) {
-        const parts = text.split(':')
-        const searchParams = parts.length >= 2
-          ? { keyword: parts[0].trim(), searchText: parts.slice(1).join(':').trim() }
-          : { keyword: text.trim(), searchText: '' }
-        setKeyword(searchParams.keyword)
-        setSearchText(searchParams.searchText)
-      } else {
-        // 当输入框为空时只重置搜索结果
-        resetSearchResults()
-        setKeyword('')
-        setSearchText('')
-      }
-    }, '输入关键字:模糊查询内容（例如：people:tom）')
+  // 获取关键字建议
+  const getKeywordSuggestions = (inputText) => {
+    if (!inputText) return []
+    
+    const parts = inputText.split(':')
+    const keywordPart = parts[0].trim()
+    
+    if (!keywordPart) return []
+    
+    return availableKeywords.filter(keyword => 
+      keyword.toLowerCase().includes(keywordPart.toLowerCase())
+    )
+  }
 
-    // 清理函数
-    return () => {
-      if (subInput) {
-        window.utools.setSubInputValue('')
-        resetSearchResults()
-        setKeyword('')
-        setSearchText('')
+  // 处理自动补全
+  const handleAutocomplete = (inputText) => {
+    const suggestions = getKeywordSuggestions(inputText)
+    
+    if (suggestions.length > 0) {
+      const matchedSuggestion = suggestions.find(s => 
+        s.toLowerCase().startsWith(inputText.split(':')[0].toLowerCase())
+      )
+      
+      if (matchedSuggestion && matchedSuggestion !== inputText.split(':')[0]) {
+        const parts = inputText.split(':')
+        const newInputText = parts.length > 1 
+          ? `${matchedSuggestion}:${parts.slice(1).join(':')}`
+          : matchedSuggestion
+        
+        setCurrentSuggestion(newInputText)
+        return newInputText
       }
     }
-  }, [enterAction])
+    
+    setCurrentSuggestion('')
+    return inputText
+  }
+
+  // 获取所有匹配的建议用于显示
+  const getAllSuggestions = (inputText) => {
+    const suggestions = getKeywordSuggestions(inputText)
+    if (suggestions.length > 0) {
+      const parts = inputText.split(':')
+      return suggestions.map(suggestion => {
+        return parts.length > 1 
+          ? `${suggestion}:${parts.slice(1).join(':')}`
+          : suggestion
+      })
+    }
+    return []
+  }
+
+  useEffect(() => {
+    // 使用全局变量存储当前输入值，避免状态更新导致的死循环
+    let currentInputValue = '';
+    let currentSelectedIndex = -1; // 局部变量跟踪选中索引
+
+    // 键盘事件处理函数
+    const handleKeyDown = (event) => {
+      // 检查是否在uTools环境中
+      if (!window.utools) return;
+      
+      const suggestions = getKeywordSuggestions(currentInputValue);
+      console.log('Key pressed:', event.key, 'Current input:', currentInputValue, 'Suggestions:', suggestions, 'Selected index:', currentSelectedIndex);
+      
+      switch (event.key) {
+        case 'Tab':
+          event.preventDefault();
+          if (suggestions.length > 0) {
+            const matchedSuggestion = suggestions.find(s =>
+              s.toLowerCase().startsWith(currentInputValue.split(':')[0].toLowerCase())
+            );
+            if (matchedSuggestion) {
+              const parts = currentInputValue.split(':');
+              const processedText = parts.length > 1
+                ? `${matchedSuggestion}:${parts.slice(1).join(':')}`
+                : matchedSuggestion;
+              console.log('Tab completion:', processedText);
+              window.utools.setSubInputValue(processedText);
+              currentInputValue = processedText;
+            }
+          }
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          console.log('ArrowRight pressed, suggestions:', suggestions);
+          if (suggestions.length > 0) {
+            const prefix = currentInputValue.split(':')[0].trim();
+            const firstSuggestion = suggestions[0];
+            console.log('Prefix:', prefix, 'First suggestion:', firstSuggestion);
+            
+            if (firstSuggestion && firstSuggestion !== prefix) {
+              const parts = currentInputValue.split(':');
+              const processedText = parts.length > 1
+                ? `${firstSuggestion}:${parts.slice(1).join(':')}`
+                : firstSuggestion;
+              console.log('Setting input value to:', processedText);
+              window.utools.setSubInputValue(processedText);
+              currentInputValue = processedText;
+            }
+          }
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          if (suggestions.length > 0) {
+            const newIndex = currentSelectedIndex >= 0 && currentSelectedIndex < suggestions.length - 1
+              ? currentSelectedIndex + 1
+              : 0;
+            console.log('ArrowDown selection index:', newIndex);
+            // 只更新选中索引，不填充输入框
+            currentSelectedIndex = newIndex;
+            setSelectedSuggestionIndex(newIndex);
+          }
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          if (suggestions.length > 0) {
+            const newIndex = currentSelectedIndex > 0
+              ? currentSelectedIndex - 1
+              : suggestions.length - 1;
+            console.log('ArrowUp selection index:', newIndex);
+            // 只更新选中索引，不填充输入框
+            currentSelectedIndex = newIndex;
+            setSelectedSuggestionIndex(newIndex);
+          }
+          break;
+        case 'Enter':
+          event.preventDefault();
+          if (suggestions.length > 0) {
+            // 如果有选中项，使用选中的建议
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < suggestions.length) {
+              const selectedSuggestion = suggestions[currentSelectedIndex];
+              const parts = currentInputValue.split(':');
+              const processedText = parts.length > 1
+                ? `${selectedSuggestion}:${parts.slice(1).join(':')}`
+                : selectedSuggestion;
+              console.log('Enter confirmation with selected:', processedText);
+              window.utools.setSubInputValue(processedText);
+              currentInputValue = processedText;
+              // 确认后重置选中索引
+              currentSelectedIndex = -1;
+              setSelectedSuggestionIndex(-1);
+            } else {
+              // 如果没有选中项，使用第一个建议
+              const firstSuggestion = suggestions[0];
+              const parts = currentInputValue.split(':');
+              const processedText = parts.length > 1
+                ? `${firstSuggestion}:${parts.slice(1).join(':')}`
+                : firstSuggestion;
+              console.log('Enter using first suggestion:', processedText);
+              window.utools.setSubInputValue(processedText);
+              currentInputValue = processedText;
+            }
+          }
+          break;
+      }
+    };
+
+    // 添加全局键盘事件监听
+    document.addEventListener('keydown', handleKeyDown);
+
+    // 设置 uTools 子输入框
+    const subInput = window.utools.setSubInput(({ text }) => {
+      if (text !== undefined) {
+        let processedText = text;
+        
+        // 更新全局变量
+        currentInputValue = text;
+        
+        // 计算最新建议
+        const latestSuggestion = handleAutocomplete(text);
+        // 获取所有匹配的建议
+        const allSuggestionsList = getAllSuggestions(text);
+
+        // 调试信息
+        console.log('setSubInput callback:', { text, latestSuggestion, allSuggestionsList });
+
+        // 更新推荐显示 - 显示所有匹配的建议
+        if (allSuggestionsList.length > 0) {
+          setCurrentSuggestion(allSuggestionsList.join(', '));
+          setAllSuggestions(allSuggestionsList);
+          // 重置选中索引
+          setSelectedSuggestionIndex(-1);
+        } else {
+          setCurrentSuggestion('');
+          setAllSuggestions([]);
+          setSelectedSuggestionIndex(-1);
+        }
+
+        // 解析输入内容
+        if (processedText) {
+          const parts = processedText.split(':');
+          const searchParams = parts.length >= 2
+            ? { keyword: parts[0].trim(), searchText: parts.slice(1).join(':').trim() }
+            : { keyword: processedText.trim(), searchText: '' };
+          setKeyword(searchParams.keyword);
+          setSearchText(searchParams.searchText);
+        } else {
+          resetSearchResults();
+          setKeyword('');
+          setSearchText('');
+          setCurrentSuggestion('');
+          setSuggestionIndex(-1);
+        }
+      }
+    }, '输入关键字:模糊查询内容（例如：people:tom）');
+
+    return () => {
+      // 清理事件监听
+      document.removeEventListener('keydown', handleKeyDown);
+      
+      if (subInput) {
+        window.utools.setSubInputValue('');
+        resetSearchResults();
+        setKeyword('');
+        setSearchText('');
+        setCurrentSuggestion('');
+        setSuggestionIndex(-1);
+      }
+    };
+  }, [enterAction, availableKeywords]);
 
   const generateTreeData = (records, config) => {
     if (!config || config.length === 0) return []
@@ -229,7 +432,8 @@ const SearchPage = ({ enterAction }) => {
   }
 
   useEffect(() => {
-    if (!keyword || !searchText) {
+    if (!keyword) {
+      resetSearchResults()
       return
     }
 
@@ -263,14 +467,17 @@ const SearchPage = ({ enterAction }) => {
     setColumns(cols)
 
     // 搜索匹配的记录
-    const filteredData = keywordData.filter(record => 
-      Object.entries(record)
-        .filter(([key]) => key !== '_id')
-        .some(([key, value]) => 
-          key !== 'createTime' &&
-          String(value).toLowerCase().includes(searchText.toLowerCase())
-        )
-    )
+    let filteredData = keywordData
+    if (searchText) {
+      filteredData = keywordData.filter(record => 
+        Object.entries(record)
+          .filter(([key]) => key !== '_id')
+          .some(([key, value]) => 
+            key !== 'createTime' &&
+            String(value).toLowerCase().includes(searchText.toLowerCase())
+          )
+      )
+    }
 
     setData(filteredData)
 
@@ -287,45 +494,107 @@ const SearchPage = ({ enterAction }) => {
   }, [keyword, searchText, savedConfigs])
 
   return (
-    <Card 
-      title={`搜索结果${data.length > 0 ? ` (共 ${data.length} 条)` : ''}`} 
-      style={{ margin: 16 }}
-      extra={
-        isTreeView && (
-          <Button onClick={() => setIsTreeView(false)}>返回列表视图</Button>
-        )
-      }
-    >
-      {data.length > 0 ? (
-        isTreeView ? (
-          <div style={{ width: '100%', overflow: 'hidden' }}>
-            <Tree
-              treeData={treeData}
-              style={{
-                background: '#fff',
-                padding: '16px',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                overflowX: 'hidden',
-                boxSizing: 'border-box'
-              }}
-              showLine={{ showLeafIcon: false }}
-              blockNode
-            />
+    <div>
+      {/* 自动补全建议显示 */}
+      {currentSuggestion && currentSuggestion !== `${keyword}${searchText ? ':' + searchText : ''}` && (
+        <Card 
+          size="small" 
+          style={{ 
+            margin: '16px 16px 0 16px',
+            backgroundColor: '#f6ffed',
+            borderColor: '#b7eb8f'
+          }}
+        >
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            fontSize: '14px'
+          }}>
+            <div>
+              <span style={{ color: '#52c41a', fontWeight: 'bold' }}>建议: </span>
+              <span style={{ color: '#666' }}>
+                {allSuggestions.map((suggestion, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      backgroundColor: index === selectedSuggestionIndex ? '#1890ff' : 'transparent',
+                      color: index === selectedSuggestionIndex ? '#fff' : '#666',
+                      padding: '2px 6px',
+                      margin: '0 2px',
+                      borderRadius: '4px',
+                      fontWeight: index === selectedSuggestionIndex ? 'bold' : 'normal'
+                    }}
+                  >
+                    {suggestion}
+                  </span>
+                ))}
+              </span>
+            </div>
+            <div style={{ color: '#999', fontSize: '12px' }}>
+              按 → 接受建议 | Tab 快速补全 | ↑↓ 选择建议 | Enter 确认选择
+            </div>
           </div>
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={data}
-            rowKey="_id"
-            pagination={false}
-            scroll={{ x: 'max-content' }}
-          />
-        )
-      ) : (
-        <Empty description="未找到匹配的数据" />
+        </Card>
       )}
-    </Card>
+      
+      {/* 可用关键字提示 */}
+      {availableKeywords.length > 0 && !keyword && (
+        <Card 
+          size="small" 
+          style={{ 
+            margin: '16px 16px 0 16px',
+            backgroundColor: '#f0f5ff',
+            borderColor: '#91caff'
+          }}
+        >
+          <div style={{ fontSize: '14px' }}>
+            <span style={{ color: '#1677ff', fontWeight: 'bold' }}>可用关键字: </span>
+            <span style={{ color: '#666' }}>{availableKeywords.join(', ')}</span>
+          </div>
+        </Card>
+      )}
+      
+      <Card 
+        title={`搜索结果${data.length > 0 ? ` (共 ${data.length} 条)` : ''}`} 
+        style={{ margin: 16 }}
+        extra={
+          isTreeView && (
+            <Button onClick={() => setIsTreeView(false)}>返回列表视图</Button>
+          )
+        }
+      >
+        {data.length > 0 ? (
+          isTreeView ? (
+            <div style={{ width: '100%', overflow: 'hidden' }}>
+              <Tree
+                treeData={treeData}
+                style={{
+                  background: '#fff',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  overflowX: 'hidden',
+                  boxSizing: 'border-box'
+                }}
+                showLine={{ showLeafIcon: false }}
+                blockNode
+              />
+            </div>
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={data}
+              rowKey="_id"
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          )
+        ) : (
+          <Empty description="未找到匹配的数据" />
+        )}
+      </Card>
+    </div>
   )
 }
 
