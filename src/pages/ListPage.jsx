@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography, Switch, Form, Input, Select } from 'antd'
-import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined, EditOutlined, ExportOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -607,6 +607,46 @@ const ListPage = ({ enterAction }) => {
     updateThemeConfig(newConfig)
   }
 
+  const handleExport = () => {
+    if (!activeTab || !data[activeTab]) {
+      message.warning('请先选择要导出的分类')
+      return
+    }
+
+    try {
+      // 准备导出数据，移除内部字段
+      const exportData = data[activeTab].map(record => {
+        const { _id, ...exportRecord } = record
+        return exportRecord
+      })
+
+      // 创建JSON字符串
+      const jsonString = JSON.stringify(exportData, null, 2)
+      
+      // 创建Blob对象
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      
+      // 创建下载链接
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${activeTab}_data.json`
+      
+      // 触发下载
+      document.body.appendChild(link)
+      link.click()
+      
+      // 清理
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      message.success(`成功导出 ${exportData.length} 条记录到 ${activeTab}_data.json`)
+    } catch (error) {
+      console.error('导出失败:', error)
+      message.error('导出失败，请重试')
+    }
+  }
+
   const aggregateModalContent = (
     <div>
       {aggregateConfig.map((level, index) => (
@@ -691,6 +731,12 @@ const ListPage = ({ enterAction }) => {
                   key: 'loadConfig',
                   label: '加载已保存的配置',
                   onClick: handleLoadConfig
+                },
+                {
+                  key: 'export',
+                  label: '导出数据',
+                  icon: <ExportOutlined />,
+                  onClick: handleExport
                 }
               ]
             }}
