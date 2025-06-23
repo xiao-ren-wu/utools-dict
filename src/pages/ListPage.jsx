@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography } from 'antd'
-import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons'
+import { Card, Tabs, Table, Button, Space, Modal, message, App, Dropdown, Tree, Tooltip, Typography, Switch, Form, Input, Select } from 'antd'
+import { DeleteOutlined, ClearOutlined, MoreOutlined, PlusOutlined, SaveOutlined, EditOutlined, ExportOutlined, KeyOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { useTheme } from '../contexts/ThemeContext'
+import { renderHyperlink, handleHyperlinkClick } from '../utils/hyperlinkUtils'
 
 const ListPage = ({ enterAction }) => {
   const [activeTab, setActiveTab] = useState('')
@@ -16,11 +18,27 @@ const ListPage = ({ enterAction }) => {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(null)
   const [selectedColumns, setSelectedColumns] = useState([])
   const [savedConfigs, setSavedConfigs] = useState({})
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null)
+  const [editForm] = Form.useForm()
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false)
+  const [addForm] = Form.useForm()
+  const [isManualInputModalVisible, setIsManualInputModalVisible] = useState(false)
+  const [manualInputForm] = Form.useForm()
+  const { themeConfig, updateThemeConfig } = useTheme()
   const { modal } = App.useApp()
 
   useEffect(() => {
     loadData()
   }, [])
+
+  // 监听主题变化，重新生成树状结构
+  useEffect(() => {
+    if (isTreeView && activeTab && data[activeTab]) {
+      const newTreeData = generateTreeData(data[activeTab], aggregateConfig)
+      setTreeData(newTreeData)
+    }
+  }, [themeConfig.isDarkMode])
 
   const loadData = () => {
     const allData = window.utools.dbStorage.getItem('dict_data') || {}
@@ -44,7 +62,30 @@ const ListPage = ({ enterAction }) => {
       .map(key => ({
         title: key,
         dataIndex: key,
-        key: key
+        key: key,
+        render: (text) => {
+          const linkInfo = renderHyperlink(text)
+          if (linkInfo.isHyperlink) {
+            return (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleHyperlinkClick(linkInfo.url)
+                }}
+                style={{
+                  color: '#1890ff',
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
+                }}
+                title={`点击打开: ${linkInfo.url}`}
+              >
+                {linkInfo.displayText}
+              </a>
+            )
+          }
+          return linkInfo.displayText
+        }
       }))
 
     cols.push({
@@ -54,6 +95,23 @@ const ListPage = ({ enterAction }) => {
       width: 180,
       sorter: (a, b) => dayjs(a.createTime).unix() - dayjs(b.createTime).unix(),
       defaultSortOrder: 'descend'
+    })
+
+    // 添加操作列
+    cols.push({
+      title: '操作',
+      key: 'action',
+      width: 120,
+      render: (_, record) => (
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+          size="small"
+        >
+          编辑
+        </Button>
+      )
     })
     
     setColumns(cols)
@@ -135,6 +193,84 @@ const ListPage = ({ enterAction }) => {
     })
   }
 
+  const handleEdit = (record) => {
+    setEditingRecord(record)
+    editForm.setFieldsValue(record)
+    setIsEditModalVisible(true)
+  }
+
+  const handleEditConfirm = async () => {
+    try {
+      const values = await editForm.validateFields()
+      const newData = { ...data }
+      const recordIndex = newData[activeTab].findIndex(item => item._id === editingRecord._id)
+      
+      if (recordIndex !== -1) {
+        newData[activeTab][recordIndex] = {
+          ...newData[activeTab][recordIndex],
+          ...values
+        }
+        
+        window.utools.dbStorage.setItem('dict_data', newData)
+        setData(newData)
+        setIsEditModalVisible(false)
+        setEditingRecord(null)
+        editForm.resetFields()
+        message.success('编辑成功')
+        
+        // 重新加载数据并刷新页面显示
+        loadData()
+      }
+    } catch (error) {
+      console.error('编辑失败:', error)
+    }
+  }
+
+  const handleEditCancel = () => {
+    setIsEditModalVisible(false)
+    setEditingRecord(null)
+    editForm.resetFields()
+  }
+
+  const handleAdd = () => {
+    if (!activeTab) {
+      message.warning('请先选择要添加记录的分类')
+      return
+    }
+    setIsAddModalVisible(true)
+    addForm.resetFields()
+  }
+
+  const handleAddConfirm = async () => {
+    try {
+      const values = await addForm.validateFields()
+      const newRecord = {
+        ...values,
+        _id: Date.now().toString(),
+        createTime: dayjs().format('YYYY-MM-DD HH:mm:ss')
+      }
+      
+      const newData = { ...data }
+      newData[activeTab] = [...newData[activeTab], newRecord]
+      
+      window.utools.dbStorage.setItem('dict_data', newData)
+      setData(newData)
+      setIsAddModalVisible(false)
+      addForm.resetFields()
+      message.success('添加成功')
+      
+      // 重新加载数据并刷新页面显示
+      loadData()
+    } catch (error) {
+      console.error('添加失败:', error)
+    }
+  }
+
+  const handleAddCancel = () => {
+    setIsAddModalVisible(false)
+    addForm.resetFields()
+  }
+
   const handleAggregate = () => {
     if (!activeTab || !data[activeTab] || data[activeTab].length === 0) {
       message.warning('当前分类没有数据')
@@ -181,6 +317,137 @@ const ListPage = ({ enterAction }) => {
     })
   }
 
+  const getNodeStyles = (level) => {
+    if (themeConfig.isDarkMode) {
+      return {
+        container: {
+          padding: '4px 8px',
+          background: level === 0 ? '#1a1a1a' : '#1f1f1f',
+          borderRadius: '4px',
+          border: '1px solid #434343',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        text: {
+          display: 'inline-block',
+          marginRight: '16px',
+          fontSize: '14px',
+          color: level === 0 ? '#177ddc' : '#49aa19'
+        },
+        count: {
+          fontSize: '12px',
+          color: level === 0 ? '#177ddc' : '#49aa19',
+          background: level === 0 ? '#111b26' : '#162312',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: level === 0 ? '#177ddc' : '#49aa19'
+        }
+      }
+    } else {
+      return {
+        container: {
+          padding: '4px 8px',
+          background: level === 0 ? '#f0f5ff' : '#f6ffed',
+          borderRadius: '4px',
+          border: '1px solid',
+          borderColor: level === 0 ? '#91caff' : '#b7eb8f',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        text: {
+          display: 'inline-block',
+          marginRight: '16px',
+          fontSize: '14px',
+          color: level === 0 ? '#1677ff' : '#52c41a'
+        },
+        count: {
+          fontSize: '12px',
+          color: level === 0 ? '#1677ff' : '#52c41a',
+          background: level === 0 ? '#e6f4ff' : '#f6ffed',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: level === 0 ? '#91caff' : '#b7eb8f'
+        }
+      }
+    }
+  }
+
+  const getHeaderStyles = () => {
+    if (themeConfig.isDarkMode) {
+      return {
+        container: {
+          display: 'flex',
+          background: '#1a1a1a',
+          padding: '8px',
+          borderRadius: '4px 4px 0 0',
+          border: '1px solid #434343',
+          borderBottom: 'none',
+          width: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        column: {
+          width: '90px',
+          padding: '0 4px',
+          fontWeight: 'bold',
+          color: '#177ddc',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          flexShrink: 0
+        },
+        count: {
+          fontSize: '12px',
+          color: '#177ddc',
+          background: '#111b26',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid #177ddc'
+        }
+      }
+    } else {
+      return {
+        container: {
+          display: 'flex',
+          background: '#f0f5ff',
+          padding: '8px',
+          borderRadius: '4px 4px 0 0',
+          border: '1px solid #91caff',
+          borderBottom: 'none',
+          width: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        },
+        column: {
+          width: '90px',
+          padding: '0 4px',
+          fontWeight: 'bold',
+          color: '#1677ff',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          flexShrink: 0
+        },
+        count: {
+          fontSize: '12px',
+          color: '#1677ff',
+          background: '#e6f4ff',
+          padding: '2px 8px',
+          borderRadius: '10px',
+          border: '1px solid #91caff'
+        }
+      }
+    }
+  }
+
   const generateTreeData = (records, config) => {
     if (!config || config.length === 0) return []
 
@@ -193,6 +460,7 @@ const ListPage = ({ enterAction }) => {
 
       const currentConfig = config[level]
       const groups = {}
+      const styles = getNodeStyles(level)
 
       data.forEach(record => {
         const key = currentConfig.columns.map(col => record[col]).join('-')
@@ -200,37 +468,15 @@ const ListPage = ({ enterAction }) => {
           groups[key] = {
             key,
             title: (
-              <div style={{ 
-                padding: '4px 8px',
-                background: level === 0 ? '#f0f5ff' : '#f6ffed',
-                borderRadius: '4px',
-                border: '1px solid',
-                borderColor: level === 0 ? '#91caff' : '#b7eb8f',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
+              <div style={styles.container}>
                 <div>
                   {currentConfig.columns.map(col => (
-                    <div key={col} style={{ 
-                      display: 'inline-block',
-                      marginRight: '16px',
-                      fontSize: '14px',
-                      color: level === 0 ? '#1677ff' : '#52c41a'
-                    }}>
+                    <div key={col} style={styles.text}>
                       <span style={{ fontWeight: 'bold' }}>{col}:</span> {record[col]}
                     </div>
                   ))}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: level === 0 ? '#1677ff' : '#52c41a',
-                  background: level === 0 ? '#e6f4ff' : '#f6ffed',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  border: '1px solid',
-                  borderColor: level === 0 ? '#91caff' : '#b7eb8f'
-                }}>
+                <div style={styles.count}>
                   包含 {data.filter(r => currentConfig.columns.every(col => r[col] === record[col])).length} 条记录
                 </div>
               </div>
@@ -246,57 +492,29 @@ const ListPage = ({ enterAction }) => {
         if (level < config.length - 1) {
           group.children = buildTree(group.data, level + 1)
         } else {
+          const headerStyles = getHeaderStyles()
           group.children = [{
             key: 'header',
             title: (() => {
               const leafColumns = Object.keys(group.data[0])
                 .filter(key => 
                   key !== '_id' && 
-                  key !== '_id' && 
                   key !== 'createTime' && 
                   !aggregateColumns.includes(key)
                 )
 
               return (
-                <div style={{
-                  display: 'flex',
-                  background: '#f0f5ff',
-                  padding: '8px',
-                  borderRadius: '4px 4px 0 0',
-                  border: '1px solid #91caff',
-                  borderBottom: 'none',
-                  width: '100%',
-                  overflow: 'hidden',
-                  boxSizing: 'border-box',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
+                <div style={headerStyles.container}>
                   <div style={{ display: 'flex' }}>
                     {leafColumns.map(key => (
-                      <div key={key} style={{
-                        width: '90px',
-                        padding: '0 4px',
-                        fontWeight: 'bold',
-                        color: '#1677ff',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
+                      <div key={key} style={headerStyles.column}>
                         <Tooltip title={key}>
                           {key}
                         </Tooltip>
                       </div>
                     ))}
                   </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#1677ff',
-                    background: '#e6f4ff',
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    border: '1px solid #91caff'
-                  }}>
+                  <div style={headerStyles.count}>
                     共 {group.data.length} 条记录
                   </div>
                 </div>
@@ -316,8 +534,9 @@ const ListPage = ({ enterAction }) => {
                 <div style={{
                   display: 'flex',
                   padding: '8px',
-                  background: '#fff',
-                  border: '1px solid #f0f0f0',
+                  background: 'transparent',
+                  border: '1px solid',
+                  borderColor: themeConfig.isDarkMode ? '#434343' : '#f0f0f0',
                   borderTop: 'none',
                   borderRadius: '0 0 4px 4px',
                   width: '100%',
@@ -326,9 +545,8 @@ const ListPage = ({ enterAction }) => {
                 }}>
                   {leafData.map(([key, value]) => (
                     <div key={key} style={{
-                      width: '100px',
+                      width: '90px',
                       padding: '0 4px',
-                      color: '#666',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -336,7 +554,29 @@ const ListPage = ({ enterAction }) => {
                     }}>
                       <Tooltip title={value}>
                         <Typography.Text>
-                          {value}
+                          {(() => {
+                            const linkInfo = renderHyperlink(value)
+                            if (linkInfo.isHyperlink) {
+                              return (
+                                <a
+                                  href="#"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleHyperlinkClick(linkInfo.url)
+                                  }}
+                                  style={{
+                                    color: '#1890ff',
+                                    textDecoration: 'underline',
+                                    cursor: 'pointer'
+                                  }}
+                                  title={`点击打开: ${linkInfo.url}`}
+                                >
+                                  {linkInfo.displayText}
+                                </a>
+                              )
+                            }
+                            return linkInfo.displayText
+                          })()}
                         </Typography.Text>
                       </Tooltip>
                     </div>
@@ -399,6 +639,153 @@ const ListPage = ({ enterAction }) => {
     setAggregateConfig([])
   }
 
+  const handleThemeChange = (followSystem) => {
+    const newConfig = {
+      followSystem,
+      isDarkMode: followSystem ? window.matchMedia('(prefers-color-scheme: dark)').matches : themeConfig.isDarkMode
+    }
+    updateThemeConfig(newConfig)
+  }
+
+  const handleDarkModeChange = (isDarkMode) => {
+    const newConfig = {
+      ...themeConfig,
+      isDarkMode
+    }
+    updateThemeConfig(newConfig)
+  }
+
+  const handleExport = () => {
+    if (!activeTab || !data[activeTab]) {
+      message.warning('请先选择要导出的分类')
+      return
+    }
+
+    try {
+      // 准备导出数据，移除内部字段
+      const exportData = data[activeTab].map(record => {
+        const { _id, ...exportRecord } = record
+        return exportRecord
+      })
+
+      // 创建JSON字符串
+      const jsonString = JSON.stringify(exportData, null, 2)
+      
+      // 创建Blob对象
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      
+      // 创建下载链接
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${activeTab}_data.json`
+      
+      // 触发下载
+      document.body.appendChild(link)
+      link.click()
+      
+      // 清理
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      message.success(`成功导出 ${exportData.length} 条记录到 ${activeTab}_data.json`)
+    } catch (error) {
+      console.error('导出失败:', error)
+      message.error('导出失败，请重试')
+    }
+  }
+
+  const handleManualInput = () => {
+    setIsManualInputModalVisible(true)
+    manualInputForm.resetFields()
+  }
+
+  const handleManualInputConfirm = async () => {
+    try {
+      const values = await manualInputForm.validateFields()
+      const { keyword, headers } = values
+      
+      // 检查关键字是否已存在
+      if (data[keyword]) {
+        message.error(`关键字"${keyword}"已存在，请使用其他关键字`)
+        return
+      }
+      
+      // 解析表头，支持逗号、分号、换行符分隔
+      const headerList = headers
+        .split(/[,;\n]/)
+        .map(header => header.trim())
+        .filter(header => header.length > 0)
+      
+      if (headerList.length === 0) {
+        message.error('请输入至少一个表头')
+        return
+      }
+
+      // 创建新的分类
+      const newData = { ...data }
+      newData[keyword] = []
+      
+      // 保存到数据库
+      window.utools.dbStorage.setItem('dict_data', newData)
+      setData(newData)
+      
+      // 切换到新创建的分类
+      setActiveTab(keyword)
+      
+      // 根据用户输入的表头生成列结构
+      const cols = headerList.map(header => ({
+        title: header,
+        dataIndex: header,
+        key: header
+      }))
+
+      // 添加创建时间列
+      cols.push({
+        title: '创建时间',
+        dataIndex: 'createTime',
+        key: 'createTime',
+        width: 180,
+        sorter: (a, b) => dayjs(a.createTime).unix() - dayjs(b.createTime).unix(),
+        defaultSortOrder: 'descend'
+      })
+
+      // 添加操作列
+      cols.push({
+        title: '操作',
+        key: 'action',
+        width: 120,
+        render: (_, record) => (
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+          >
+            编辑
+          </Button>
+        )
+      })
+      
+      setColumns(cols)
+      
+      setIsManualInputModalVisible(false)
+      manualInputForm.resetFields()
+      message.success(`成功创建分类"${keyword}"，包含 ${headerList.length} 个表头`)
+      
+      // 显示表头信息
+      message.info(`表头: ${headerList.join(', ')}`)
+      
+    } catch (error) {
+      console.error('创建失败:', error)
+    }
+  }
+
+  const handleManualInputCancel = () => {
+    setIsManualInputModalVisible(false)
+    manualInputForm.resetFields()
+  }
+
   const aggregateModalContent = (
     <div>
       {aggregateConfig.map((level, index) => (
@@ -449,6 +836,13 @@ const ListPage = ({ enterAction }) => {
         <Space style={{ marginBottom: 16 }}>
           <Button
             type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
+            添加记录
+          </Button>
+          <Button
+            type="primary"
             danger
             icon={<DeleteOutlined />}
             onClick={handleDelete}
@@ -476,6 +870,12 @@ const ListPage = ({ enterAction }) => {
                   key: 'loadConfig',
                   label: '加载已保存的配置',
                   onClick: handleLoadConfig
+                },
+                {
+                  key: 'export',
+                  label: '导出数据',
+                  icon: <ExportOutlined />,
+                  onClick: handleExport
                 }
               ]
             }}
@@ -490,8 +890,9 @@ const ListPage = ({ enterAction }) => {
           <div style={{ width: '100%', overflow: 'hidden' }}>
             <Tree
               treeData={treeData}
+              className="dark-tree"
               style={{
-                background: '#fff',
+                background: 'transparent',
                 padding: '16px',
                 borderRadius: '8px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
@@ -522,7 +923,33 @@ const ListPage = ({ enterAction }) => {
   }))
 
   return (
-    <Card title="数据字典列表" style={{ margin: 16 }}>
+    <Card 
+      title="数据字典列表" 
+      style={{ margin: 16 }}
+      extra={
+        <Space>
+          <Button
+            type="primary"
+            icon={<KeyOutlined />}
+            onClick={handleManualInput}
+            size="small"
+          >
+            手动录入
+          </Button>
+          <span>跟随系统</span>
+          <Switch
+            checked={themeConfig.followSystem}
+            onChange={handleThemeChange}
+          />
+          <span>暗色主题</span>
+          <Switch
+            checked={themeConfig.isDarkMode}
+            onChange={handleDarkModeChange}
+            disabled={themeConfig.followSystem}
+          />
+        </Space>
+      }
+    >
       {items.length > 0 ? (
         <>
           <Tabs
@@ -583,6 +1010,102 @@ const ListPage = ({ enterAction }) => {
                   ))}
               </div>
             </div>
+          </Modal>
+          <Modal
+            title="编辑记录"
+            open={isEditModalVisible}
+            onOk={handleEditConfirm}
+            onCancel={handleEditCancel}
+            width={600}
+          >
+            <Form
+              form={editForm}
+              layout="vertical"
+            >
+              {columns
+                .filter(col => col.dataIndex !== 'createTime' && col.key !== 'action')
+                .map(col => (
+                  <Form.Item
+                    key={col.dataIndex}
+                    label={col.title}
+                    name={col.dataIndex}
+                  >
+                    <Input />
+                  </Form.Item>
+                ))}
+            </Form>
+          </Modal>
+          <Modal
+            title="添加记录"
+            open={isAddModalVisible}
+            onOk={handleAddConfirm}
+            onCancel={handleAddCancel}
+            width={600}
+          >
+            <Form
+              form={addForm}
+              layout="vertical"
+            >
+              {columns
+                .filter(col => col.dataIndex !== 'createTime' && col.key !== 'action')
+                .map(col => (
+                  <Form.Item
+                    key={col.dataIndex}
+                    label={col.title}
+                    name={col.dataIndex}
+                  >
+                    <Input />
+                  </Form.Item>
+                ))}
+            </Form>
+          </Modal>
+          <Modal
+            title="手动录入关键字"
+            open={isManualInputModalVisible}
+            onOk={handleManualInputConfirm}
+            onCancel={handleManualInputCancel}
+            width={600}
+          >
+            <Form
+              form={manualInputForm}
+              layout="vertical"
+            >
+              <Form.Item
+                label="关键字（分类名称）"
+                name="keyword"
+                rules={[
+                  { required: true, message: '请输入关键字' },
+                  { min: 1, message: '关键字不能为空' },
+                  {
+                    validator: (_, value) => {
+                      if (value && data[value]) {
+                        return Promise.reject(new Error('该关键字已存在，请使用其他关键字'))
+                      }
+                      return Promise.resolve()
+                    }
+                  }
+                ]}
+                extra="请输入唯一的分类名称，用于标识此数据字典"
+              >
+                <Input 
+                  placeholder="例如：用户信息、产品列表、员工档案等"
+                />
+              </Form.Item>
+              <Form.Item
+                label="表头"
+                name="headers"
+                rules={[
+                  { required: true, message: '请输入表头' },
+                  { min: 1, message: '表头不能为空' }
+                ]}
+                extra="请输入表头，多个表头用逗号、分号或换行符分隔"
+              >
+                <Input.TextArea 
+                  placeholder="例如：姓名,年龄,性别&#10;或者：姓名;年龄;性别&#10;或者每行一个：&#10;姓名&#10;年龄&#10;性别"
+                  rows={6}
+                />
+              </Form.Item>
+            </Form>
           </Modal>
         </>
       ) : (
